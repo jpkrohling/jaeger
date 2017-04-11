@@ -55,6 +55,20 @@ github.com/uber/jaeger
     repository, to facilitate re-use by other projects.
 
 
+## Creating a Docker image
+
+The first step is to build Jaeger, like:
+```bash
+go build -o ./cmd/standalone/standalone-linux ./cmd/standalone/main.go
+```
+
+Then, build and run the Docker image:
+```bash
+docker build -t yournamespace/jaeger .
+docker run -p 3001:3001 -p 14267:14267 yournamespace/jaeger
+```
+
+
 ## Making A Change
 
 *Before making any significant changes, please [open an
@@ -101,4 +115,3 @@ way to add such header is to run `make fmt`.
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 ```
-
