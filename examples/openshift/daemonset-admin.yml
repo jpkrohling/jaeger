@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ClusterRole
+metadata:
+  name: daemonset-admin
+rules:
+  - resources:
+    - daemonsets
+    apiGroups:
+    - extensions
+    verbs:
+    - create
+    - get
+    - list
+    - watch
+    - delete
+    - update
+
