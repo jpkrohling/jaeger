@@ -60,7 +60,7 @@ def parse_go_file(f):
         output_lines.append("")
         return "\n".join(output_lines), imports_reordered
 
-
+// example
 def main():
     parser = argparse.ArgumentParser(
         description='Tool to make cleaning up import orders easily')
