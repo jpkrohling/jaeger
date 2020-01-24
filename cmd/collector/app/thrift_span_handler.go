@@ -35,12 +35,14 @@ type SubmitBatchOptions struct {
 type ZipkinSpansHandler interface {
 	// SubmitZipkinBatch records a batch of spans in Zipkin Thrift format
 	SubmitZipkinBatch(spans []*zipkincore.Span, options SubmitBatchOptions) ([]*zipkincore.Response, error)
+	Close() error
 }
 
 // JaegerBatchesHandler consumes and handles Jaeger batches
 type JaegerBatchesHandler interface {
 	// SubmitBatches records a batch of spans in Jaeger Thrift format
 	SubmitBatches(batches []*jaeger.Batch, options SubmitBatchOptions) ([]*jaeger.BatchSubmitResponse, error)
+	Close() error
 }
 
 type jaegerBatchesHandler struct {
@@ -89,6 +91,10 @@ func (jbh *jaegerBatchesHandler) SubmitBatches(batches []*jaeger.Batch, options 
 	return responses, nil
 }
 
+func (jbh *jaegerBatchesHandler) Close() error {
+	return jbh.modelProcessor.Close()
+}
+
 type zipkinSpanHandler struct {
 	logger         *zap.Logger
 	sanitizer      zipkinS.Sanitizer
@@ -128,6 +134,10 @@ func (h *zipkinSpanHandler) SubmitZipkinBatch(spans []*zipkincore.Span, options 
 
 	h.logger.Debug("Zipkin span batch processed by the collector.", zap.Int("span-count", len(spans)))
 	return responses, nil
+}
+
+func (h *zipkinSpanHandler) Close() error {
+	return h.modelProcessor.Close()
 }
 
 // ConvertZipkinToModel is a helper function that logs warnings during conversion

@@ -16,6 +16,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -24,6 +25,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -38,7 +40,6 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/jaegertracing/jaeger/cmd/collector/app"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/builder"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/grpcserver"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
@@ -95,8 +96,8 @@ func main() {
 				logger.Fatal("Failed to create span writer", zap.Error(err))
 			}
 
-			builderOpts := new(builder.CollectorOptions).InitFromViper(v)
-			handlerBuilder := &builder.SpanHandlerBuilder{
+			builderOpts := new(app.CollectorOptions).InitFromViper(v)
+			handlerBuilder := &app.SpanHandlerBuilder{
 				SpanWriter:     spanWriter,
 				CollectorOpts:  *builderOpts,
 				Logger:         logger,
@@ -107,12 +108,12 @@ func main() {
 			strategyStoreFactory.InitFromViper(v)
 			strategyStore := initSamplingStrategyStore(strategyStoreFactory, metricsFactory, logger)
 
+			tch, err := tchannel.NewChannel(serviceName, &tchannel.ChannelOptions{})
 			{
-				ch, err := tchannel.NewChannel(serviceName, &tchannel.ChannelOptions{})
 				if err != nil {
 					logger.Fatal("Unable to create new TChannel", zap.Error(err))
 				}
-				server := thrift.NewServer(ch)
+				server := thrift.NewServer(tch)
 				batchHandler := app.NewTChannelHandler(jaegerBatchesHandler, zipkinSpansHandler)
 				server.Register(jc.NewTChanCollectorServer(batchHandler))
 				server.Register(zc.NewTChanZipkinCollectorServer(batchHandler))
@@ -124,7 +125,7 @@ func main() {
 				}
 				logger.Info("Starting jaeger-collector TChannel server", zap.Int("port", builderOpts.CollectorPort))
 				logger.Warn("TChannel has been deprecated and will be removed in a future release")
-				ch.Serve(listener)
+				tch.Serve(listener)
 			}
 
 			server, err := startGRPCServer(builderOpts, grpcHandler, strategyStore, logger)
@@ -132,6 +133,7 @@ func main() {
 				logger.Fatal("Could not start gRPC collector", zap.Error(err))
 			}
 
+			var hServer, zkServer *http.Server
 			{
 				r := mux.NewRouter()
 				apiHandler := app.NewAPIHandler(jaegerBatchesHandler)
@@ -151,25 +153,59 @@ func main() {
 				recoveryHandler := recoveryhandler.NewRecoveryHandler(logger, true)
 				httpHandler := recoveryHandler(r)
 
-				go startZipkinHTTPAPI(logger, builderOpts.CollectorZipkinHTTPPort, builderOpts.CollectorZipkinAllowedOrigins, builderOpts.CollectorZipkinAllowedHeaders, zipkinSpansHandler, recoveryHandler)
-
 				httpPortStr := ":" + strconv.Itoa(builderOpts.CollectorHTTPPort)
 				logger.Info("Starting jaeger-collector HTTP server", zap.String("http-host-port", httpPortStr))
+
+				hServer = &http.Server{Addr: httpPortStr, Handler: httpHandler}
 				go func() {
-					if err := http.ListenAndServe(httpPortStr, httpHandler); err != nil {
+					if err := hServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 						logger.Fatal("Could not launch service", zap.Error(err))
 					}
 					svc.HC().Set(healthcheck.Unavailable)
 				}()
+
+				zkServer = zipkinServer(logger, builderOpts.CollectorZipkinHTTPPort, builderOpts.CollectorZipkinAllowedOrigins, builderOpts.CollectorZipkinAllowedHeaders, zipkinSpansHandler, recoveryHandler)
+				if zkServer != nil {
+					go func() {
+						if err := zkServer.ListenAndServe(); err != nil {
+							logger.Fatal("Could not launch Zipkin server", zap.Error(err))
+						}
+						svc.HC().Set(healthcheck.Unavailable)
+					}()
+				}
+
 			}
 
 			svc.RunAndThen(func() {
-				if closer, ok := spanWriter.(io.Closer); ok {
-					server.GracefulStop()
-					err := closer.Close()
-					if err != nil {
-						logger.Error("Failed to close span writer", zap.Error(err))
+				logError := func(name string, err error) {
+					if err == nil {
+						return
 					}
+					logger.Error("failed to close", zap.Error(err), zap.String("name", name))
+				}
+
+				server.GracefulStop() // gRPC
+				tch.Close()           // TChannel
+
+				// HTTP server
+				timeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				logError("httpServer", hServer.Shutdown(timeout))
+				defer cancel()
+
+				// Zipkin server
+				if nil != zkServer {
+					timeout, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					logError("zipkinServer", zkServer.Shutdown(timeout))
+					defer cancel()
+				}
+
+				// by now, we shouldn't have any in-flight requests anymore, close the processors
+				logError("zipkinSpansHandler", zipkinSpansHandler.Close())
+				logError("jaegerBatchesHandler", jaegerBatchesHandler.Close())
+				logError("grpcHandler", grpcHandler.Close())
+
+				if closer, ok := spanWriter.(io.Closer); ok {
+					logError("spanWriter", closer.Close())
 				}
 			})
 			return nil
@@ -184,7 +220,7 @@ func main() {
 		v,
 		command,
 		svc.AddFlags,
-		builder.AddFlags,
+		app.AddFlags,
 		storageFactory.AddFlags,
 		strategyStoreFactory.AddFlags,
 	)
@@ -196,7 +232,7 @@ func main() {
 }
 
 func startGRPCServer(
-	opts *builder.CollectorOptions,
+	opts *app.CollectorOptions,
 	handler *app.GRPCHandler,
 	samplingStore strategystore.StrategyStore,
 	logger *zap.Logger,
@@ -223,14 +259,14 @@ func startGRPCServer(
 	return server, err
 }
 
-func startZipkinHTTPAPI(
+func zipkinServer(
 	logger *zap.Logger,
 	zipkinPort int,
 	allowedOrigins string,
 	allowedHeaders string,
 	zipkinSpansHandler app.ZipkinSpansHandler,
 	recoveryHandler func(http.Handler) http.Handler,
-) {
+) *http.Server {
 	if zipkinPort != 0 {
 		zHandler := zipkin.NewAPIHandler(zipkinSpansHandler)
 		r := mux.NewRouter()
@@ -248,10 +284,10 @@ func startZipkinHTTPAPI(
 		httpPortStr := ":" + strconv.Itoa(zipkinPort)
 		logger.Info("Listening for Zipkin HTTP traffic", zap.Int("zipkin.http-port", zipkinPort))
 
-		if err := http.ListenAndServe(httpPortStr, c.Handler(recoveryHandler(r))); err != nil {
-			logger.Fatal("Could not launch service", zap.Error(err))
-		}
+		return &http.Server{Addr: httpPortStr, Handler: c.Handler(recoveryHandler(r))}
 	}
+
+	return nil
 }
 
 func initSamplingStrategyStore(

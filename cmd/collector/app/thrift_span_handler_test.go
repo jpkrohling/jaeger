@@ -17,6 +17,7 @@ package app
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,9 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 )
+
+var _ (io.Closer) = (ZipkinSpansHandler)(nil)
+var _ (io.Closer) = (JaegerBatchesHandler)(nil)
 
 func TestJaegerSpanHandler(t *testing.T) {
 	testChunks := []struct {
@@ -74,6 +78,10 @@ func (s *shouldIErrorProcessor) ProcessSpans(mSpans []*model.Span, _ ProcessSpan
 		retMe[i] = true
 	}
 	return retMe, nil
+}
+
+func (s *shouldIErrorProcessor) Close() error {
+	return nil
 }
 
 func TestZipkinSpanHandler(t *testing.T) {

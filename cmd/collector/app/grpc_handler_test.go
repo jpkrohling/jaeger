@@ -44,6 +44,10 @@ func (p *mockSpanProcessor) ProcessSpans(spans []*model.Span, opts ProcessSpansO
 	return oks, p.expectedError
 }
 
+func (p *mockSpanProcessor) Close() error {
+	return nil
+}
+
 func (p *mockSpanProcessor) getSpans() []*model.Span {
 	p.mux.Lock()
 	defer p.mux.Unlock()

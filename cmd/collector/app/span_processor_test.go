@@ -17,6 +17,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"sync"
 	"testing"
 	"time"
@@ -35,6 +36,7 @@ import (
 )
 
 var blackListedService = "zoidberg"
+var _ (io.Closer) = (SpanProcessor)(nil)
 
 func TestBySvcMetrics(t *testing.T) {
 	allowedService := "bender"

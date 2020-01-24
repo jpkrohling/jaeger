@@ -38,6 +38,10 @@ func (p *mockZipkinHandler) SubmitZipkinBatch(spans []*zipkincore.Span, opts Sub
 	return nil, nil
 }
 
+func (p *mockZipkinHandler) Close() error {
+	return nil
+}
+
 func TestTChannelHandler(t *testing.T) {
 	jh := &mockJaegerHandler{}
 	zh := &mockZipkinHandler{}

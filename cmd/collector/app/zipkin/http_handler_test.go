@@ -61,6 +61,10 @@ func (p *mockZipkinHandler) getSpans() []*zipkincore.Span {
 	return p.spans
 }
 
+func (p *mockZipkinHandler) Close() error {
+	return nil
+}
+
 func initializeTestServer(err error) (*httptest.Server, *APIHandler) {
 	r := mux.NewRouter()
 	handler := NewAPIHandler(&mockZipkinHandler{err: err})

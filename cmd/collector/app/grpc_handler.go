@@ -53,3 +53,8 @@ func (g *GRPCHandler) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest)
 	}
 	return &api_v2.PostSpansResponse{}, nil
 }
+
+// Close stops the current gRPC handler
+func (g *GRPCHandler) Close() error {
+	return g.spanProcessor.Close()
+}

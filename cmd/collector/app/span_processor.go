@@ -47,6 +47,7 @@ type ProcessSpansOptions struct {
 type SpanProcessor interface {
 	// ProcessSpans processes model spans and return with either a list of true/false success or an error
 	ProcessSpans(mSpans []*model.Span, options ProcessSpansOptions) ([]bool, error)
+	Close() error
 }
 
 type spanProcessor struct {
@@ -67,6 +68,7 @@ type spanProcessor struct {
 	bytesProcessed     *atomic.Uint64
 	spansProcessed     *atomic.Uint64
 	stopCh             chan struct{}
+	stopped            *atomic.Bool
 }
 
 type queueItem struct {
@@ -118,6 +120,7 @@ func newSpanProcessor(spanWriter spanstore.Writer, opts ...Option) *spanProcesso
 		spanWriter:         spanWriter,
 		collectorTags:      options.collectorTags,
 		stopCh:             make(chan struct{}),
+		stopped:            atomic.NewBool(false),
 		dynQueueSizeMemory: options.dynQueueSizeMemory,
 		dynQueueSizeWarmup: options.dynQueueSizeWarmup,
 		bytesProcessed:     atomic.NewUint64(0),
@@ -137,10 +140,21 @@ func newSpanProcessor(spanWriter spanstore.Writer, opts ...Option) *spanProcesso
 	return &sp
 }
 
-// Stop halts the span processor and all its go-routines.
+// Stop is an alias to #Close(). Deprecated.
 func (sp *spanProcessor) Stop() {
+	sp.Close()
+}
+
+// Close shuts down the current processor and its internal processes. If the processor is already closed, it's a noop.
+func (sp *spanProcessor) Close() error {
+	if sp.stopped.Load() {
+		return nil
+	}
+
+	sp.stopped = atomic.NewBool(true)
 	close(sp.stopCh)
 	sp.queue.Stop()
+	return nil
 }
 
 func (sp *spanProcessor) saveSpan(span *model.Span) {

@@ -49,6 +49,10 @@ func (p *mockJaegerHandler) SubmitBatches(batches []*jaeger.Batch, _ SubmitBatch
 	return nil, p.err
 }
 
+func (p *mockJaegerHandler) Close() error {
+	return nil
+}
+
 func (p *mockJaegerHandler) getBatches() []*jaeger.Batch {
 	p.mux.Lock()
 	defer p.mux.Unlock()

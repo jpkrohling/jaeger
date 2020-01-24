@@ -90,3 +90,7 @@ type mockSpanProcessor struct {
 func (p *mockSpanProcessor) ProcessSpans(spans []*model.Span, _ app.ProcessSpansOptions) ([]bool, error) {
 	return []bool{}, nil
 }
+
+func (p *mockSpanProcessor) Close() error {
+	return nil
+}
