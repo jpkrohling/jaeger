@@ -17,7 +17,7 @@ require (
 	github.com/frankban/quicktest v1.7.3 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-kit/kit v0.10.0 // indirect
-	github.com/go-openapi/errors v0.19.4
+	github.com/go-openapi/errors v0.19.9
 	github.com/go-openapi/loads v0.19.5
 	github.com/go-openapi/runtime v0.19.15
 	github.com/go-openapi/spec v0.20.2
