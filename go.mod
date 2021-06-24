@@ -4,12 +4,13 @@ go 1.16
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v0.9.0 // indirect
-	github.com/Shopify/sarama v1.29.0
-	github.com/apache/thrift v0.14.1
+	github.com/Shopify/sarama v1.29.1
+	github.com/apache/thrift v0.14.2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/bsm/sarama-cluster v2.1.13+incompatible
 	github.com/crossdock/crossdock-go v0.0.0-20160816171116-049aabb0122b
-	github.com/dgraph-io/badger v1.6.2
+	github.com/dgraph-io/badger/v3 v3.2103.0
+	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
@@ -25,8 +26,7 @@ require (
 	github.com/gocql/gocql v0.0.0-20200228163523-cd4b606dd2fb
 	github.com/gogo/googleapis v1.4.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/mock v1.4.3 // indirect
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -43,18 +43,14 @@ require (
 	github.com/opentracing-contrib/go-grpc v0.0.0-20191001143057-db30781987df
 	github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/prometheus/client_golang v1.5.1
-	github.com/prometheus/common v0.10.0
-	github.com/prometheus/procfs v0.1.3 // indirect
+	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/common v0.29.0
 	github.com/rs/cors v1.7.0
 	github.com/securego/gosec v0.0.0-20200203094520-d13bb6d2420c
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/afero v1.2.2 // indirect
-	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v0.0.7
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.7.1
+	github.com/spf13/viper v1.8.0
 	github.com/stretchr/testify v1.7.0
 	github.com/uber/jaeger-client-go v2.29.1+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible
@@ -62,14 +58,14 @@ require (
 	github.com/wadey/gocovmerge v0.0.0-20160331181800-b5bfa59ec0ad
 	github.com/xdg-go/scram v1.0.2
 	go.mongodb.org/mongo-driver v1.5.2 // indirect
-	go.uber.org/atomic v1.7.0
+	go.uber.org/atomic v1.8.0
 	go.uber.org/automaxprocs v1.4.0
 	go.uber.org/zap v1.17.0
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed
-	golang.org/x/sys v0.0.0-20210423082822-04245dca01da
-	google.golang.org/grpc v1.29.1
-	gopkg.in/ini.v1 v1.52.0 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616
+	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
+	google.golang.org/grpc v1.38.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/yaml.v2 v2.4.0
 	honnef.co/go/tools v0.2.0
 )
