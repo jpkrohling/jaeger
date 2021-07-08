@@ -7,7 +7,7 @@ require (
 	github.com/Shopify/sarama v1.29.1
 	github.com/apache/thrift v0.14.2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/bsm/sarama-cluster v2.1.13+incompatible
+	github.com/bsm/sarama-cluster v2.1.15+incompatible
 	github.com/crossdock/crossdock-go v0.0.0-20160816171116-049aabb0122b
 	github.com/dgraph-io/badger/v3 v3.2103.0
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
